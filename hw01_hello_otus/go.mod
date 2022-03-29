@@ -1,4 +1,4 @@
-module github.com/boltunoreh/hw01_hello_go
+module github.com/boltunoreh/otus_go_hw/hw01_hello_otus
 
 go 1.17
 
