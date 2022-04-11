@@ -6,9 +6,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Change to true if needed.
-var taskWithAsteriskIsCompleted = false
-
 var text = `Как видите, он  спускается  по  лестнице  вслед  за  своим
 	другом   Кристофером   Робином,   головой   вниз,  пересчитывая
 	ступеньки собственным затылком:  бум-бум-бум.  Другого  способа
@@ -79,4 +76,36 @@ func TestTop10(t *testing.T) {
 			require.Equal(t, expected, Top10(text))
 		}
 	})
+}
+
+func TestTop10Custom(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{name: "simple ab", input: "a a a b b", expected: []string{"a", "b"}},
+		{name: "equal counts", input: "b b b a a a c c d d d e e", expected: []string{"a", "b", "d", "c", "e"}},
+		{name: "digits", input: "11 11 1 00 0 1 01 0 1 0 1 11 00 01 01 10 10 01", expected: []string{"01", "1", "0", "11", "00", "10"}},
+		{name: "top 10 only", input: "a a b b c c d d e e f f g g h h i i j j k k l l m m n n o o", expected: []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"}},
+	}
+
+	if !taskWithAsteriskIsCompleted {
+		testsWithAsterisk := []struct {
+			name     string
+			input    string
+			expected []string
+		}{
+			{name: "punctuation", input: "a. a. a, a, a, a, b b b b! b! b-b", expected: []string{"a,", "b", "a.", "b!", "b-b"}},
+			{name: "punctuation only", input: ",, , , ,, , , ,! ! ! . . . . . , - - - -- -", expected: []string{",", ".", "-", "!", ",,", ",!", "--"}},
+			{name: "case sensitivity", input: "Aa Aa aa aa aa", expected: []string{"aa", "Aa"}},
+		}
+
+		tests = append(tests, testsWithAsterisk...)
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			require.Equal(t, test.expected, Top10(test.input))
+		})
+	}
 }
