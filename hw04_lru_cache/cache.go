@@ -12,10 +12,14 @@ type lruCache struct {
 	capacity int
 	queue    List
 	items    map[Key]*ListItem
+	mutex    chan struct{}
 }
 
 func (cache *lruCache) Set(key Key, value interface{}) bool {
-	_, itemExists := cache.Get(key)
+	cache.mutex <- struct{}{}
+	defer func() { <-cache.mutex }()
+
+	_, itemExists := cache.items[key]
 
 	if !itemExists && cache.queue.Len() == cache.capacity {
 		backItem := cache.queue.Back()
@@ -38,10 +42,14 @@ func (cache *lruCache) Set(key Key, value interface{}) bool {
 }
 
 func (cache *lruCache) Get(key Key) (interface{}, bool) {
+	cache.mutex <- struct{}{}
+	defer func() { <-cache.mutex }()
+
 	item, ok := cache.items[key]
 
 	if ok {
 		cache.queue.MoveToFront(item)
+
 		return item.Value.(cacheItem).value, ok
 	}
 
@@ -63,5 +71,6 @@ func NewCache(capacity int) Cache {
 		capacity: capacity,
 		queue:    NewList(),
 		items:    make(map[Key]*ListItem, capacity),
+		mutex:    make(chan struct{}, 1),
 	}
 }
