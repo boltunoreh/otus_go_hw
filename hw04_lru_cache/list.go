@@ -64,6 +64,9 @@ func (list *list) PushFront(v interface{}) *ListItem {
 	}
 
 	list.front = &newItem
+	if list.len == 0 {
+		list.back = &newItem
+	}
 	list.len++
 
 	return list.front
@@ -83,6 +86,9 @@ func (list *list) PushBack(v interface{}) *ListItem {
 	}
 
 	list.back = &newItem
+	if list.len == 0 {
+		list.front = &newItem
+	}
 	list.len++
 
 	return list.back
