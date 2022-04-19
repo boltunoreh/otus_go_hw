@@ -68,3 +68,111 @@ func TestRun(t *testing.T) {
 		require.LessOrEqual(t, int64(elapsedTime), int64(sumTime/2), "tasks were run sequentially?")
 	})
 }
+
+func TestCustomRun(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
+	tests := []struct {
+		name              string
+		successTasksCount int
+		errorTasksCount   int
+		workersCount      int
+		maxErrorsCount    int
+	}{
+		{name: "tasks len < n", successTasksCount: 0, errorTasksCount: 10, workersCount: 20, maxErrorsCount: 5},
+		{name: "tasks len == n", successTasksCount: 0, errorTasksCount: 10, workersCount: 10, maxErrorsCount: 10},
+		{name: "tasks len > n", successTasksCount: 0, errorTasksCount: 10, workersCount: 5, maxErrorsCount: 10},
+		{name: "error count > task count", successTasksCount: 0, errorTasksCount: 10, workersCount: 20, maxErrorsCount: 100},
+		{name: "zero m", successTasksCount: 0, errorTasksCount: 10, workersCount: 20, maxErrorsCount: 0},
+		{name: "negative m", successTasksCount: 0, errorTasksCount: 10, workersCount: 20, maxErrorsCount: -10},
+
+		{name: "tasks len < n", successTasksCount: 10, errorTasksCount: 10, workersCount: 20, maxErrorsCount: 10},
+		{name: "tasks len == n", successTasksCount: 10, errorTasksCount: 10, workersCount: 10, maxErrorsCount: 10},
+		{name: "tasks len > n", successTasksCount: 10, errorTasksCount: 10, workersCount: 5, maxErrorsCount: 10},
+		{name: "error count > task count", successTasksCount: 10, errorTasksCount: 10, workersCount: 20, maxErrorsCount: 100},
+		{name: "zero m", successTasksCount: 10, errorTasksCount: 10, workersCount: 20, maxErrorsCount: 0},
+		{name: "negative m", successTasksCount: 10, errorTasksCount: 10, workersCount: 20, maxErrorsCount: -10},
+
+		{
+			name:              "random n m",
+			successTasksCount: rand.Intn(100),
+			errorTasksCount:   rand.Intn(100),
+			workersCount:      rand.Intn(100),
+			maxErrorsCount:    rand.Intn(100),
+		},
+		{
+			name:              "random n m",
+			successTasksCount: rand.Intn(100),
+			errorTasksCount:   rand.Intn(100),
+			workersCount:      rand.Intn(100),
+			maxErrorsCount:    rand.Intn(100),
+		},
+		{
+			name:              "random n m",
+			successTasksCount: rand.Intn(100),
+			errorTasksCount:   rand.Intn(100),
+			workersCount:      rand.Intn(100),
+			maxErrorsCount:    rand.Intn(100),
+		},
+		{
+			name:              "random n m",
+			successTasksCount: rand.Intn(100),
+			errorTasksCount:   rand.Intn(100),
+			workersCount:      rand.Intn(100),
+			maxErrorsCount:    rand.Intn(100),
+		},
+		{
+			name:              "random n m",
+			successTasksCount: rand.Intn(100),
+			errorTasksCount:   rand.Intn(100),
+			workersCount:      rand.Intn(100),
+			maxErrorsCount:    rand.Intn(100),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			tasks := make([]Task, 0, test.successTasksCount)
+
+			var runTasksCount int32
+			var runErrorTasksCount int32
+			var runSuccessTasksCount int32
+
+			for i := 0; i < test.errorTasksCount; i++ {
+				err := fmt.Errorf("error from task %d", i)
+				tasks = append(tasks, func() error {
+					time.Sleep(time.Millisecond * time.Duration(rand.Intn(100)))
+					atomic.AddInt32(&runErrorTasksCount, 1)
+					atomic.AddInt32(&runTasksCount, 1)
+					return err
+				})
+			}
+
+			for i := 0; i < test.successTasksCount; i++ {
+				tasks = append(tasks, func() error {
+					time.Sleep(time.Millisecond * time.Duration(rand.Intn(100)))
+					atomic.AddInt32(&runSuccessTasksCount, 1)
+					atomic.AddInt32(&runTasksCount, 1)
+					return nil
+				})
+			}
+
+			err := Run(tasks, test.workersCount, test.maxErrorsCount)
+
+			var maxTasks int32
+			if test.maxErrorsCount >= test.errorTasksCount {
+				maxTasks = int32(test.workersCount + test.errorTasksCount)
+			} else {
+				maxTasks = int32(test.workersCount + test.maxErrorsCount)
+			}
+
+			var expectedError error
+			if test.maxErrorsCount <= test.errorTasksCount {
+				expectedError = ErrErrorsLimitExceeded
+			}
+
+			require.Truef(t, errors.Is(err, expectedError), "actual err - %v", err)
+			require.LessOrEqual(t, runErrorTasksCount, maxTasks, "extra tasks were started")
+		})
+	}
+}
