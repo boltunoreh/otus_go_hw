@@ -2,8 +2,11 @@ package hw09structvalidator
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type UserRole string
@@ -39,13 +42,119 @@ type (
 func TestValidate(t *testing.T) {
 	tests := []struct {
 		in          interface{}
-		expectedErr error
+		expectedErr *error
 	}{
 		{
-			// Place your code here.
+			in: User{
+				ID:     "11f47ad5-7b73-42c0-abae-878b1e16adee",
+				Name:   "Test",
+				Age:    20,
+				meta:   nil,
+				Email:  "test@test.com",
+				Role:   "admin",
+				Phones: []string{"89519111511", "89519111511"},
+			},
+			expectedErr: nil,
 		},
-		// ...
-		// Place your code here.
+		{
+			in: User{
+				ID:     "11f47ad5-7b73-42c0-abae",
+				Name:   "Test",
+				Age:    20,
+				meta:   nil,
+				Email:  "test@test.com",
+				Role:   "admin",
+				Phones: []string{"89519111511", "89519111511"},
+			},
+			expectedErr: &ErrStrLen,
+		},
+		{
+			in: User{
+				ID:     "11f47ad5-7b73-42c0-abae-878b1e16adee",
+				Name:   "Test",
+				Age:    15,
+				meta:   nil,
+				Email:  "test@test.com",
+				Role:   "admin",
+				Phones: []string{"89519111511", "89519111511"},
+			},
+			expectedErr: &ErrIntMin,
+		},
+		{
+			in: User{
+				ID:     "11f47ad5-7b73-42c0-abae-878b1e16adee",
+				Name:   "Test",
+				Age:    60,
+				meta:   nil,
+				Email:  "test@test.com",
+				Role:   "admin",
+				Phones: []string{"89519111511", "89519111511"},
+			},
+			expectedErr: &ErrIntMax,
+		},
+		{
+			in: User{
+				ID:     "11f47ad5-7b73-42c0-abae-878b1e16adee",
+				Name:   "Test",
+				Age:    20,
+				meta:   nil,
+				Email:  "test-test.com",
+				Role:   "admin",
+				Phones: []string{"89519111511", "89519111511"},
+			},
+			expectedErr: &ErrStrRegexp,
+		},
+		{
+			in: User{
+				ID:     "11f47ad5-7b73-42c0-abae-878b1e16adee",
+				Name:   "Test",
+				Age:    20,
+				meta:   nil,
+				Email:  "test@test.com",
+				Role:   "guest",
+				Phones: []string{"89519111511", "89519111511"},
+			},
+			expectedErr: &ErrStrIn,
+		},
+		{
+			in: User{
+				ID:     "11f47ad5-7b73-42c0-abae-878b1e16adee",
+				Name:   "Test",
+				Age:    20,
+				meta:   nil,
+				Email:  "test@test.com",
+				Role:   "admin",
+				Phones: []string{"9519111511", "89519111511"},
+			},
+			expectedErr: &ErrStrLen,
+		},
+		{
+			in: App{
+				Version: "12345",
+			},
+			expectedErr: nil,
+		},
+		{
+			in: App{
+				Version: "1234",
+			},
+			expectedErr: &ErrStrLen,
+		},
+		{
+			in: Token{
+				Header:    []byte{1, 3, 4, 6},
+				Payload:   []byte{1, 3, 4},
+				Signature: []byte{1, 6},
+			},
+			expectedErr: nil,
+		},
+		{
+			in: Response{
+				Code: 301,
+				Body: "{\"redirect\": \"dzen.ru\"}",
+			},
+			expectedErr: &ErrIntIn,
+		},
 	}
 
 	for i, tt := range tests {
@@ -53,8 +162,13 @@ func TestValidate(t *testing.T) {
 			tt := tt
 			t.Parallel()
 
-			// Place your code here.
-			_ = tt
+			err := Validate(tt.in)
+
+			if tt.expectedErr != nil {
+				assert.True(t, errors.As(err, tt.expectedErr))
+			} else {
+				assert.Nil(t, err)
+			}
 		})
 	}
 }
