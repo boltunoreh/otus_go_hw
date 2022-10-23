@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"io/ioutil"
 	"net"
 	"sync"
@@ -61,5 +62,17 @@ func TestTelnetClient(t *testing.T) {
 		}()
 
 		wg.Wait()
+	})
+
+	t.Run("error", func(t *testing.T) {
+		in := &bytes.Buffer{}
+		out := &bytes.Buffer{}
+
+		timeout, err := time.ParseDuration("10s")
+		require.NoError(t, err)
+
+		client := NewTelnetClient("0.0.0.0:4242", timeout, ioutil.NopCloser(in), out)
+		require.Error(t, errors.New("dial tcp 0.0.0.0:4242: connect: connection refused"), client.Connect())
+		require.Error(t, errors.New("connection is null"), client.Close())
 	})
 }
