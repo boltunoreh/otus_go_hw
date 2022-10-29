@@ -42,7 +42,7 @@ type (
 func TestValidate(t *testing.T) {
 	tests := []struct {
 		in          interface{}
-		expectedErr *error
+		expectedErr error
 	}{
 		{
 			in: User{
@@ -66,7 +66,7 @@ func TestValidate(t *testing.T) {
 				Role:   "admin",
 				Phones: []string{"89519111511", "89519111511"},
 			},
-			expectedErr: &ErrStrLen,
+			expectedErr: ErrStrLen,
 		},
 		{
 			in: User{
@@ -78,7 +78,7 @@ func TestValidate(t *testing.T) {
 				Role:   "admin",
 				Phones: []string{"89519111511", "89519111511"},
 			},
-			expectedErr: &ErrIntMin,
+			expectedErr: ErrIntMin,
 		},
 		{
 			in: User{
@@ -90,7 +90,7 @@ func TestValidate(t *testing.T) {
 				Role:   "admin",
 				Phones: []string{"89519111511", "89519111511"},
 			},
-			expectedErr: &ErrIntMax,
+			expectedErr: ErrIntMax,
 		},
 		{
 			in: User{
@@ -102,7 +102,7 @@ func TestValidate(t *testing.T) {
 				Role:   "admin",
 				Phones: []string{"89519111511", "89519111511"},
 			},
-			expectedErr: &ErrStrRegexp,
+			expectedErr: ErrStrRegexp,
 		},
 		{
 			in: User{
@@ -114,7 +114,7 @@ func TestValidate(t *testing.T) {
 				Role:   "guest",
 				Phones: []string{"89519111511", "89519111511"},
 			},
-			expectedErr: &ErrStrIn,
+			expectedErr: ErrStrIn,
 		},
 		{
 			in: User{
@@ -126,7 +126,7 @@ func TestValidate(t *testing.T) {
 				Role:   "admin",
 				Phones: []string{"9519111511", "89519111511"},
 			},
-			expectedErr: &ErrStrLen,
+			expectedErr: ErrStrLen,
 		},
 		{
 			in: App{
@@ -138,7 +138,7 @@ func TestValidate(t *testing.T) {
 			in: App{
 				Version: "1234",
 			},
-			expectedErr: &ErrStrLen,
+			expectedErr: ErrStrLen,
 		},
 		{
 			in: Token{
@@ -153,7 +153,7 @@ func TestValidate(t *testing.T) {
 				Code: 301,
 				Body: "{\"redirect\": \"dzen.ru\"}",
 			},
-			expectedErr: &ErrIntIn,
+			expectedErr: ErrIntIn,
 		},
 	}
 
@@ -165,7 +165,7 @@ func TestValidate(t *testing.T) {
 			err := Validate(tt.in)
 
 			if tt.expectedErr != nil {
-				assert.True(t, errors.As(err, tt.expectedErr))
+				assert.True(t, errors.Is(err, tt.expectedErr))
 			} else {
 				assert.Nil(t, err)
 			}
